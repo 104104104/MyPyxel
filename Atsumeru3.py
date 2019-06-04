@@ -6,6 +6,41 @@ height=255
 myfps=10
 
 minsize=1
+gravitysize=2
+
+
+gravveclen=1
+
+class Enemys:
+    def __init__(self):
+        self.enes=[]
+    def appendene(self):
+        self.enes.append(Enemy())
+    def grav(self, nowene):
+        for ene in self.enes:
+            ene.gravvecx=nowene.x-ene.x
+            ene.gravvecy=nowene.y-ene.y
+            if ene.gravvecx!=0 and ene.gravvecy!=0:
+                if ene.gravvecx > ene.gravvecy:
+                    ene.gravvecx=int(ene.gravvecx/abs(ene.gravvecy))
+                    ene.gravvecy=int(ene.gravvecy/abs(ene.gravvecy))
+                else:
+                    ene.gravvecy=int(ene.gravvecy/abs(ene.gravvecx))
+                    ene.gravvecx=int(ene.gravvecx/abs(ene.gravvecx))
+           
+            if ene.gravvecx>gravveclen:
+                ene.gravvecx=gravveclen
+            if ene.gravvecy>gravveclen:
+                ene.gravvecy=gravveclen
+            if ene.gravvecx<-gravveclen:
+                ene.gravvecx=-gravveclen
+            if ene.gravvecy<-gravveclen:
+                ene.gravvecy=-gravveclen
+
+            ene.x+=ene.gravvecx
+            ene.y+=ene.gravvecy
+
+
 
 class Enemy:
     def __init__(self):
@@ -14,15 +49,18 @@ class Enemy:
         self.size=minsize
         self.vecx=pyxel.mouse_x-self.x
         self.vecy=pyxel.mouse_y-self.y
+        self.gravvecx=0
+        self.gravvecy=0
     def bigger(self, plus):
         self.size+=plus
-    def draw_enemy(self):
+
+    def calvec(self):
         self.vecx=pyxel.mouse_x-self.x
         self.vecy=pyxel.mouse_y-self.y
         if self.vecx!=0 and self.vecy!=0:
             if self.vecx > self.vecy:
                 self.vecx=int(self.vecx/abs(self.vecy))
-                vecy=int(self.vecy/abs(self.vecy))
+                self.vecy=int(self.vecy/abs(self.vecy))
             else:
                 self.vecy=int(self.vecy/abs(self.vecx))
                 self.vecx=int(self.vecx/abs(self.vecx))
@@ -30,9 +68,16 @@ class Enemy:
             self.vecx=5
         if self.vecy>5:
             self.vecy=5
+        if self.vecx<-5:
+            self.vecx=-5
+        if self.vecy<-5:
+            self.vecy=-5
+
+
 
         self.x+=self.vecx
         self.y+=self.vecy
+    def draw_enemy(self):
         pyxel.circ(self.x, self.y, self.size, 9)
 
 
@@ -67,7 +112,7 @@ class Burret:
 class App:
     def __init__(self, fps=myfps):
         pyxel.init(width, height)
-        self.enemys=[]
+        self.enemys=Enemys()
         self.cannons=[]
         self.cannons.append(Cannon())
         self.maxene=0
@@ -76,21 +121,24 @@ class App:
 
     def update(self):
         if pyxel.frame_count % (myfps*2)==0:
-            self.enemys.append(Enemy())
-        for i, ene in enumerate(self.enemys):
+            self.enemys.appendene()
+        for i, ene in enumerate(self.enemys.enes):
+            ene.calvec()
             if ene.x<= pyxel.mouse_x<=ene.x+7  and ene.y<=pyxel.mouse_y<=ene.y+7:
                 self.gameover_flug=1
             #ene同士の当たり判定
-            for j, ene2 in enumerate(self.enemys):
+            for j, ene2 in enumerate(self.enemys.enes):
                 if i!=j:
                     if ene.x-3 < ene2.x < ene.x+3 and ene.y-3 < ene2.y < ene.y+3:
                         ene.bigger(ene2.size)
-                        self.enemys.pop(j)
+                        self.enemys.enes.pop(j)
                         break
+            if ene.size>=gravitysize:
+                self.enemys.grav(ene)
 
     def draw(self):
         pyxel.cls(0)
-        for ene in self.enemys:
+        for ene in self.enemys.enes:
             ene.draw_enemy()
             if self.maxene<ene.size:
                 self.maxene=ene.size
